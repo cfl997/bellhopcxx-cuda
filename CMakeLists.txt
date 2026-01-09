@@ -18,6 +18,10 @@
 cmake_minimum_required(VERSION 3.15)
 cmake_policy(SET CMP0091 NEW) # MSVC runtime static library / DLL selection
 
+#add root path
+set(TEDS_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+message("TEDS_ROOT_DIR:" ${TEDS_ROOT_DIR})
+
 option(BHC_DEBUG "Enable debugging features, reduces performance" OFF)
 # option(BHC_PROF  "Enable profiling features" OFF)
 if(BHC_DEBUG)# OR BHC_PROF)

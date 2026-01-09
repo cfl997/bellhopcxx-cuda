@@ -2,9 +2,24 @@ cmake_minimum_required(VERSION 3.15)
 
 project(TEDSbellhop LANGUAGES CXX)
 
+SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG "${TEDS_ROOT_DIR}/bin64/")
+SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG "${TEDS_ROOT_DIR}/lib/win64/") 
+
+SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "${TEDS_ROOT_DIR}/bin64/")
+SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${TEDS_ROOT_DIR}/lib/win64/")
+
+SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${TEDS_ROOT_DIR}/bin64/")
+SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELWITHDEBINFO "${TEDS_ROOT_DIR}/lib/win64/")
+
+
+
 add_library(TEDSbellhop SHARED
     src/TEDSbellhop.cpp
+    src/TEDSbellhop_API.cpp
     include/TEDSbellhop/TEDSbellhop.hpp
+    include/TEDSbellhop/TEDSbellhop_Data.h
+    include/TEDSbellhop/TEDSbellhop_Export.h
+    include/TEDSbellhop/TEDSbellhop_API.h
 )
 
 target_compile_definitions(TEDSbellhop PRIVATE

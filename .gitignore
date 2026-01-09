@@ -5,6 +5,9 @@
 *.cubin
 *.fatbin
 
+bin64/
+lib/
+
 bin/
 build/
 build_windows/
