@@ -159,3 +159,29 @@ if(MSVC)
             $<TARGET_FILE_DIR:example_advanced>)
 endif()
 
+add_executable(test_teds_parallel_qssp_bottomseg
+    test_teds_parallel_qssp_bottomseg.cpp
+)
+
+target_include_directories(test_teds_parallel_qssp_bottomseg PRIVATE
+    ${CMAKE_SOURCE_DIR}/TEDSbellhop/include
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_link_libraries(test_teds_parallel_qssp_bottomseg PRIVATE
+    TEDSbellhop
+)
+
+set_target_properties(test_teds_parallel_qssp_bottomseg PROPERTIES
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED YES
+)
+
+if(MSVC)
+    target_compile_options(test_teds_parallel_qssp_bottomseg PRIVATE /utf-8)
+
+    add_custom_command(TARGET test_teds_parallel_qssp_bottomseg POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_FILE:TEDSbellhop>
+            $<TARGET_FILE_DIR:test_teds_parallel_qssp_bottomseg>)
+endif()

@@ -42,7 +42,7 @@ static tedsbellhop::TL2DInput create_base_input_from_user_matrix()
     // -----------------------------
     in.n_rays = 2000;
     in.start_angle_deg = -90.0;
-    in.end_angle_deg   = 90.0;
+    in.end_angle_deg   = 50.0;
 
     // -----------------------------
     // 2) TL 输出网格 (0..100km, 0..5000m)
@@ -81,7 +81,7 @@ static tedsbellhop::TL2DInput create_base_input_from_user_matrix()
 
     in.beam.box_x_m = 100000;
 
-    const int Nb = 500;
+    const int Nb = 50;
     in.boundaries.bottom_curve.r.resize(Nb);
     in.boundaries.bottom_curve.z.resize(Nb);
 

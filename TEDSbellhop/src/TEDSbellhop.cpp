@@ -246,7 +246,7 @@ static inline void set_ssp_quad(
 
 static inline void write_boundary_curve_2d(
     bhc::bhcParams<false> &params, bhc::BdryInfoTopBot<false> &dst, const BoundaryCurve2D &src,
-    bool is_top)
+    bool is_top, const std::vector<Boundaries2D::BottomRangeSegment>* bottom_by_range)
 {
     if(src.r.size() != src.z.size() || src.r.size() < 2)
         throw Error("BoundaryCurve2D 点列非法：r/z 长度不一致或点数<2");
@@ -268,8 +268,36 @@ static inline void write_boundary_curve_2d(
     else
         bhc::extsetup_bathymetry<false>(params, NPts);
 
+    auto apply_halfspace_to_bdpt = [&](bhc::BdryPtFull<false> &pt, const Halfspace &hs) {
+        pt.hs.bc     = static_cast<char>(hs.bc);
+        pt.hs.alphaR = static_cast<bhc::real>(hs.alphaR_mps);
+        pt.hs.betaR  = static_cast<bhc::real>(hs.betaR_mps);
+        pt.hs.rho    = static_cast<bhc::real>(hs.rho_gcm3);
+        pt.hs.alphaI = static_cast<bhc::real>(hs.alphaI);
+        pt.hs.betaI  = static_cast<bhc::real>(hs.betaI);
+        std::string opt = pad_right(hs.opt, 6);
+        std::memcpy(pt.hs.Opt, opt.data(), 6);
+        // BdryPtFull<false> 没有 hsx（Sigma 等）字段（hsx 只在 BdryPtSmall 内），这里无法设置粗糙度。
+    };
+
+    auto find_bottom_hs = [&](double rr) -> const Halfspace* {
+        if(!bottom_by_range || bottom_by_range->empty()) return nullptr;
+        // 区间语义：[start, end)
+        for(const auto &seg : *bottom_by_range) {
+            if(rr >= seg.range_start && rr < seg.range_end) return &seg.hs;
+        }
+        return nullptr;
+    };
+
     auto write_point = [&](int32_t i, double rr, double zz) {
         dst.bd[i].x = bhc::vec2(rr, zz);
+
+        // 仅对海底（is_top=false）应用分段底质
+        if(!is_top) {
+            if(const Halfspace* hs = find_bottom_hs(rr)) {
+                apply_halfspace_to_bdpt(dst.bd[i], *hs);
+            }
+        }
     };
 
     const int32_t offset = ext ? 1 : 0;
@@ -301,8 +329,12 @@ static inline void set_boundaries_2d(bhc::bhcParams<false> &params, const Bounda
     if(b.top_curve.r.empty() || b.bottom_curve.r.empty())
         throw Error("Boundaries2D 必须提供 top_curve/bottom_curve");
 
-    write_boundary_curve_2d(params, params.bdinfo->top, b.top_curve, true);
-    write_boundary_curve_2d(params, params.bdinfo->bot, b.bottom_curve, false);
+    write_boundary_curve_2d(params, params.bdinfo->top, b.top_curve, true, nullptr);
+
+    // 仅在 bottom_by_range 非空时启用“按距离分段底质”写入。
+    // 注意：range 单位必须与 bottom_curve.range_in_km 一致（调用方负责）。
+    const auto* segs = b.bottom_by_range.empty() ? nullptr : &b.bottom_by_range;
+    write_boundary_curve_2d(params, params.bdinfo->bot, b.bottom_curve, false, segs);
 }
 
 void validate(const TL2DInput& in)
@@ -407,10 +439,11 @@ TL2DJob start_tl_2d(const TL2DInput& in)
                 throw Error("bhc::setup_nofile 失败");
             }
 
-            // ---- 强制 no-file 模式：杜绝任何文件读取 ----
+            // ---- no-file 模式：杜绝任何文件读取 ----
+            // 说明：bellhopcxx 用 hs.Opt 控制是否从文件读取反射系数（例如 'F'）。
+            // 我们这里清空 Opt，确保不会意外走文件路径；边界条件由后续 set_boundaries_2d() 决定。
             std::memset(params.Bdry->Top.hs.Opt, ' ', sizeof(params.Bdry->Top.hs.Opt));
             std::memset(params.Bdry->Bot.hs.Opt, ' ', sizeof(params.Bdry->Bot.hs.Opt));
-            params.Bdry->Top.hs.Opt[0] = 'V';
             params.bdinfo->top.dirty = true;
             params.bdinfo->bot.dirty = true;
 

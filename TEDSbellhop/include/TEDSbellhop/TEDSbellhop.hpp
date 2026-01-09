@@ -349,7 +349,7 @@ struct Halfspace {
     double betaI      = 0.0;
 
     /// 额外选项（最多 6 字符）。仅在底层模型支持时生效。
-    std::string opt = "";
+    std::string opt = "";  //cfl-这个默认就给""
 
     /// 粗糙度/散射相关参数（仅在底层启用相应模型时生效）。
     double sigma = 0.0;
@@ -415,6 +415,27 @@ struct Boundaries2D {
     Halfspace bottom;
     BoundaryCurve2D top_curve;
     BoundaryCurve2D bottom_curve;
+
+    // -----------------------------
+    // Range-dependent bottom halfspace（按距离变化的底质）
+    // -----------------------------
+
+    // 当 bottom.bc == Acoustic 时：
+    // - 若 bottom_by_range 为空：使用 bottom（全局统一底质）
+    // - 若 bottom_by_range 非空：按距离段为海底曲线各节点填充不同的 Halfspace
+    //
+    // 约束/约定：
+    // - 仅对 bottom_curve 生效（海面 top 暂不支持分段底质）
+    // - 区间为闭开 [range_start, range_end)
+    // - range 单位与 bottom_curve.range_in_km 一致（即：bottom_curve 用 km 则这里也用 km；反之用 m）
+    // - 建议区间覆盖 bottom_curve 的有效范围；未覆盖部分将回退使用 bottom
+    struct BottomRangeSegment {
+        double range_start = 0.0;
+        double range_end   = 0.0;
+        Halfspace hs;
+    };
+
+    std::vector<BottomRangeSegment> bottom_by_range = {};
 };
 
 /**
